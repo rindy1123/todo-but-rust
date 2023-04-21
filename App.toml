@@ -1,0 +1,7 @@
+[database]
+namespace = "todo"
+database = "todo"
+username = "root"
+password = "root"
+host = "localhost"
+port = "48000"
