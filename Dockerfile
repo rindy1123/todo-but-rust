@@ -14,8 +14,6 @@
 
 FROM rust:1
 WORKDIR /app
-COPY . .
 EXPOSE 58000
-RUN cargo install --path .
-RUN cp /usr/local/cargo/bin/todo_api /usr/local/bin/todo_api
-CMD ["todo_api"]
+RUN cargo install cargo-watch
+CMD ["cargo", "watch", "-x", "run"]

@@ -3,6 +3,8 @@ version: "3.9"
 services:
   api:
     build: .
+    volumes:
+      - .:/app
     ports:
       - 58000:8000
     depends_on:
