@@ -1,7 +1,7 @@
 use fairing::db::DbMiddleware;
 use rocket::{
     figment::providers::{Format, Toml},
-    figment::Figment,
+    Config,
 };
 
 #[macro_use]
@@ -13,7 +13,7 @@ mod view;
 
 use controller::todos;
 
-// TODO: docker, test
+// TODO: test
 #[launch]
 fn rocket() -> _ {
     let todo_api = routes![
@@ -23,7 +23,7 @@ fn rocket() -> _ {
         todos::update,
         todos::delete
     ];
-    let figment = Figment::from(rocket::Config::default()).merge(Toml::file("App.toml").nested());
+    let figment = Config::figment().merge(Toml::file("App.toml").nested());
     rocket::custom(figment)
         .mount("/", todo_api)
         .attach(DbMiddleware)
