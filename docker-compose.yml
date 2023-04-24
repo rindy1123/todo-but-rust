@@ -2,9 +2,9 @@ version: "3.9"
 
 services:
   api:
-    build: .
+    build: ./api
     volumes:
-      - .:/app
+      - ./api:/app
     ports:
       - 58000:8000
     depends_on:
@@ -16,5 +16,14 @@ services:
     volumes:
       - surrealdb:/db
     command: start --log debug --user root --pass root file:/db/todo.db
+  web:
+    build: ./web
+    volumes:
+      - ./web:/app
+    ports:
+      - 28080:8080
+    command: trunk serve --address 0.0.0.0
+    depends_on:
+      - api
 volumes:
   surrealdb:
