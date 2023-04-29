@@ -1,4 +1,4 @@
-use fairing::db::DbMiddleware;
+use fairing::{cors::Cors, db::DbMiddleware};
 use rocket::{
     figment::providers::{Format, Toml},
     Config,
@@ -27,4 +27,5 @@ fn rocket() -> _ {
     rocket::custom(figment)
         .mount("/", todo_api)
         .attach(DbMiddleware)
+        .attach(Cors)
 }

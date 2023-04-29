@@ -1,7 +1,15 @@
+use wasm_bindgen::JsValue;
+use web_sys::console;
 use yew::prelude::*;
+
+const URL: &'static str = "http://localhost:58000/todos";
 
 #[function_component]
 fn App() -> Html {
+    wasm_bindgen_futures::spawn_local(async move {
+        let res = reqwest_wasm::get(URL).await.unwrap().text().await.unwrap();
+        console::log_1(&JsValue::from(res));
+    });
     let counter = use_state(|| 0);
     let onclick = {
         let counter = counter.clone();
