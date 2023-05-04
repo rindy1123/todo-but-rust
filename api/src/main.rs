@@ -1,6 +1,7 @@
 use fairing::{cors::Cors, db::DbMiddleware};
 use rocket::{
     figment::providers::{Format, Toml},
+    http::Status,
     Config,
 };
 
@@ -13,6 +14,10 @@ mod view;
 
 use controller::todos;
 
+#[options("/<_..>")]
+fn cors_handler() -> Status {
+    Status::NoContent
+}
 // TODO: test
 #[launch]
 fn rocket() -> _ {
@@ -21,7 +26,8 @@ fn rocket() -> _ {
         todos::show,
         todos::create,
         todos::update,
-        todos::delete
+        todos::delete,
+        cors_handler
     ];
     let figment = Config::figment().merge(Toml::file("App.toml").nested());
     rocket::custom(figment)
