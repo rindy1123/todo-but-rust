@@ -1,12 +1,11 @@
 use rocket::serde::json::Json;
 use serde::Serialize;
-use surrealdb::sql::Thing;
 
 use crate::model::todo::ToDo;
 
 #[derive(Serialize)]
 pub struct SingleToDo {
-    id: Option<Thing>,
+    id: String,
     done: bool,
     description: String,
 }

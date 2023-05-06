@@ -16,6 +16,28 @@ struct ToDo {
     done: bool,
     description: String,
 }
+
+fn to_list_element(todo: ToDo) -> Html {
+    let cloned_todo = todo.clone();
+    let onclick = Callback::from(move |_| {
+        let id = cloned_todo.id.clone();
+        wasm_bindgen_futures::spawn_local(async move {
+            let client = reqwest_wasm::Client::new();
+            client
+                .delete(format!("{}/{}", API_URL, id))
+                .send()
+                .await
+                .unwrap();
+        });
+    });
+    html! {
+        <li>
+            {format!("id: {} | {} | {}", todo.id, todo.description, todo.done)}
+            <button {onclick}>{"delete"}</button>
+        </li>
+    }
+}
+
 #[function_component(List)]
 fn list() -> Html {
     let todo_list_response = use_state(|| ToDoListResponse::default());
@@ -35,12 +57,12 @@ fn list() -> Html {
         },
         (),
     );
+    let todos = todo_list_response.deref().todos.clone().into_iter();
+
     html! {
         <ul>
             {
-                todo_list_response.deref().todos.clone().into_iter().map(|todo| {
-                    html!{ <li>{format!("id: {} | {} | {}", todo.id, todo.description, todo.done)}</li> }
-                }).collect::<Html>()
+                todos.map(to_list_element).collect::<Html>()
             }
         </ul>
     }
