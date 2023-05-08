@@ -1,10 +1,11 @@
-use pages::todos::{list::ToDoList, new::ToDoNew};
+use pages::todos::{list::ToDoList, new::ToDoNew, show::ToDoShow};
 use yew::prelude::*;
 use yew_router::prelude::*;
 
 mod constants;
 mod pages;
 
+// TODO: todo structs, api client
 #[derive(Clone, PartialEq, Routable)]
 enum Route {
     #[at("/")]
@@ -21,7 +22,7 @@ fn switch(routes: Route) -> Html {
     match routes {
         Route::Home => html! { <Redirect<Route> to={Route::ToDoList} /> },
         Route::ToDoList => html! { <ToDoList /> },
-        Route::ToDoShow { id } => html! { {id} },
+        Route::ToDoShow { id } => html! { <ToDoShow id={id} /> },
         Route::ToDoNew => html! { <ToDoNew /> },
     }
 }
