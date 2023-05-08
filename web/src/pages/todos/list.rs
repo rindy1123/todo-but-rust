@@ -12,7 +12,7 @@ use crate::{constants::API_URL, Route};
 struct ToDoListResponse {
     todos: Vec<ToDo>,
 }
-#[derive(Deserialize, Default, Clone, PartialEq)]
+#[derive(Deserialize, Default, Clone, PartialEq, Properties)]
 struct ToDo {
     id: String,
     done: bool,
@@ -21,7 +21,7 @@ struct ToDo {
 
 #[derive(Properties, PartialEq)]
 struct DeleteButtonProps {
-    todo: ToDo,
+    id: String,
 }
 
 #[derive(Serialize)]
@@ -32,9 +32,9 @@ pub struct PutToDo {
 
 #[function_component(DeleteButton)]
 fn delete_button(props: &DeleteButtonProps) -> Html {
-    let cloned_todo = props.todo.clone();
+    let id = props.id.clone();
     let onclick = Callback::from(move |_| {
-        let id = cloned_todo.id.clone();
+        let id = id.clone();
         wasm_bindgen_futures::spawn_local(async move {
             let client = reqwest_wasm::Client::new();
             client
@@ -49,9 +49,11 @@ fn delete_button(props: &DeleteButtonProps) -> Html {
     }
 }
 
-fn to_list_element(todo: ToDo) -> Html {
+#[function_component(ToDoItem)]
+fn todo_item(todo: &ToDo) -> Html {
     let cloned_todo = todo.clone();
-    let onclick = Callback::from(move |e: MouseEvent| {
+    let navigator = use_navigator().unwrap();
+    let onclick_checkbox = Callback::from(move |e: MouseEvent| {
         let target = e.target().unwrap();
         let done = target.unchecked_into::<HtmlInputElement>().checked();
         let id = cloned_todo.id.clone();
@@ -68,6 +70,12 @@ fn to_list_element(todo: ToDo) -> Html {
         });
     });
 
+    let cloned_todo = todo.clone();
+    let onclick_label = Callback::from(move |_| {
+        let id = cloned_todo.id.clone();
+        navigator.push(&Route::ToDoShow { id })
+    });
+
     html! {
         <div>
             <input
@@ -75,10 +83,10 @@ fn to_list_element(todo: ToDo) -> Html {
                 id={todo.id.clone()}
                 name={todo.id.clone()}
                 checked={todo.done}
-                {onclick}
+                onclick={onclick_checkbox}
             />
-            <label for={todo.id.clone()}>{todo.description.clone()}</label>
-            <DeleteButton {todo} />
+            <label for={todo.id.clone()} onclick={onclick_label}>{todo.description.clone()}</label>
+            <DeleteButton id={todo.id.clone()} />
         </div>
     }
 }
@@ -106,7 +114,9 @@ fn list() -> Html {
 
     html! {
         {
-            todos.map(to_list_element).collect::<Html>()
+            todos.map(|todo| {
+                html!{ <ToDoItem id={todo.id} description={todo.description} done={todo.done} /> }
+            }).collect::<Html>()
         }
     }
 }
@@ -118,6 +128,7 @@ pub fn todo_list() -> Html {
 
     html! {
         <>
+            <h1>{"TODO List"}</h1>
             <List />
             <button {onclick}>{"create"}</button>
         </>

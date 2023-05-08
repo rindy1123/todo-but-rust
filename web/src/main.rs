@@ -7,6 +7,8 @@ mod pages;
 
 #[derive(Clone, PartialEq, Routable)]
 enum Route {
+    #[at("/")]
+    Home,
     #[at("/todos")]
     ToDoList,
     #[at("/todos/:id")]
@@ -17,6 +19,7 @@ enum Route {
 
 fn switch(routes: Route) -> Html {
     match routes {
+        Route::Home => html! { <Redirect<Route> to={Route::ToDoList} /> },
         Route::ToDoList => html! { <ToDoList /> },
         Route::ToDoShow { id } => html! { {id} },
         Route::ToDoNew => html! { <ToDoNew /> },
