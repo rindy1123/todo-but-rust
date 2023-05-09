@@ -2,6 +2,7 @@ use pages::todos::{list::ToDoList, new::ToDoNew, show::ToDoShow};
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+mod atoms;
 mod constants;
 mod pages;
 

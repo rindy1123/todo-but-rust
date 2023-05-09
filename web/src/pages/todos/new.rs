@@ -1,40 +1,21 @@
 use std::ops::Deref;
 
 use serde::Serialize;
-use wasm_bindgen::JsCast;
-use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_router::prelude::use_navigator;
 
-use crate::{constants::API_URL, Route};
+use crate::{atoms::text_input::TextInput, constants::API_URL, Route};
 
 #[derive(Serialize)]
 pub struct PostToDo {
     description: String,
 }
 
-#[derive(Properties, PartialEq)]
-struct TextProps {
-    pub handle_onchange: Callback<String>,
-}
-
-#[function_component(TextInput)]
-fn text_input(props: &TextProps) -> Html {
-    let handle_onchange = props.handle_onchange.clone();
-    let onchange = Callback::from(move |e: Event| {
-        let target = e.target().unwrap();
-        let value = target.unchecked_into::<HtmlInputElement>().value();
-        handle_onchange.emit(value);
-    });
-    html! {
-        <input type="text" {onchange} />
-    }
-}
-
 #[function_component(ToDoNew)]
 pub fn new() -> Html {
     let text = use_state(|| String::new());
     let cloned_text = text.clone();
+    let text_input_value = text.deref().clone();
     let handle_onchange = Callback::from(move |value: String| {
         cloned_text.set(value);
     });
@@ -54,7 +35,7 @@ pub fn new() -> Html {
 
     html! {
         <form {onsubmit}>
-            <TextInput handle_onchange={handle_onchange}/>
+            <TextInput handle_onchange={handle_onchange} value={text_input_value}/>
             <button>{"send"}</button>
         </form>
     }
