@@ -1,33 +1,19 @@
 use std::ops::Deref;
 
-use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsCast;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_router::prelude::use_navigator;
 
-use crate::{constants::API_URL, Route};
-
-#[derive(Deserialize, Default, Clone)]
-struct ToDoListResponse {
-    todos: Vec<ToDo>,
-}
-#[derive(Deserialize, Default, Clone, PartialEq, Properties)]
-struct ToDo {
-    id: String,
-    done: bool,
-    description: String,
-}
+use crate::{
+    api_client::{ApiClient, ToDoListResponse},
+    structs::ToDo,
+    Route,
+};
 
 #[derive(Properties, PartialEq)]
 struct DeleteButtonProps {
     id: String,
-}
-
-#[derive(Serialize)]
-pub struct PutToDo {
-    done: bool,
-    description: String,
 }
 
 #[function_component(DeleteButton)]
@@ -36,12 +22,7 @@ fn delete_button(props: &DeleteButtonProps) -> Html {
     let onclick = Callback::from(move |_| {
         let id = id.clone();
         wasm_bindgen_futures::spawn_local(async move {
-            let client = reqwest_wasm::Client::new();
-            client
-                .delete(format!("{}/{}", API_URL, id))
-                .send()
-                .await
-                .unwrap();
+            ApiClient::delete(id).await;
         });
     });
     html! {
@@ -59,14 +40,12 @@ fn todo_item(todo: &ToDo) -> Html {
         let id = cloned_todo.id.clone();
         let description = cloned_todo.description.clone();
         wasm_bindgen_futures::spawn_local(async move {
-            let client = reqwest_wasm::Client::new();
-            let body = PutToDo { done, description };
-            client
-                .put(format!("{}/{}", API_URL, id))
-                .json(&body)
-                .send()
-                .await
-                .unwrap();
+            let params = ToDo {
+                id,
+                done,
+                description,
+            };
+            ApiClient::put(params).await;
         });
     });
 
@@ -98,13 +77,7 @@ fn list() -> Html {
     use_effect_with_deps(
         |_| {
             wasm_bindgen_futures::spawn_local(async move {
-                let res = reqwest_wasm::get(API_URL)
-                    .await
-                    .unwrap()
-                    .text()
-                    .await
-                    .unwrap();
-                let todos: ToDoListResponse = serde_json::from_str(&res).unwrap();
+                let todos = ApiClient::list().await;
                 cloned_todo_list_response.set(todos);
             });
         },

@@ -1,17 +1,9 @@
 use std::ops::Deref;
 
-use serde::{Deserialize, Serialize};
 use yew::prelude::*;
 use yew_router::prelude::use_navigator;
 
-use crate::{atoms::text_input::TextInput, constants::API_URL, Route};
-
-#[derive(Serialize, Deserialize, Default, Clone, PartialEq, Properties)]
-struct ToDo {
-    id: String,
-    done: bool,
-    description: String,
-}
+use crate::{api_client::ApiClient, atoms::text_input::TextInput, structs::ToDo, Route};
 
 #[derive(Properties, PartialEq)]
 pub struct Props {
@@ -40,16 +32,14 @@ pub fn show(props: &Props) -> Html {
     let cloned_todo = todo.clone();
     let onsubmit = Callback::from(move |e: SubmitEvent| {
         e.prevent_default();
-        let body = cloned_todo.deref().clone();
+        let body = ToDo {
+            id: cloned_todo.id.clone(),
+            done: cloned_todo.done,
+            description: cloned_todo.description.clone(),
+        };
         let navigator = navigator.clone();
         wasm_bindgen_futures::spawn_local(async move {
-            let client = reqwest_wasm::Client::new();
-            client
-                .put(format!("{}/{}", API_URL, body.id))
-                .json(&body)
-                .send()
-                .await
-                .unwrap();
+            ApiClient::put(body).await;
             navigator.push(&Route::ToDoList);
         });
     });
@@ -59,13 +49,7 @@ pub fn show(props: &Props) -> Html {
     use_effect_with_deps(
         |_| {
             wasm_bindgen_futures::spawn_local(async move {
-                let res = reqwest_wasm::get(format!("{}/{}", API_URL, id))
-                    .await
-                    .unwrap()
-                    .text()
-                    .await
-                    .unwrap();
-                let todo: ToDo = serde_json::from_str(&res).unwrap();
+                let todo: ToDo = ApiClient::get(id).await;
                 cloned_todo.set(todo);
             });
         },

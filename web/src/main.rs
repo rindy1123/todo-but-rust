@@ -2,11 +2,11 @@ use pages::todos::{list::ToDoList, new::ToDoNew, show::ToDoShow};
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+mod api_client;
 mod atoms;
-mod constants;
 mod pages;
+mod structs;
 
-// TODO: todo structs, api client
 #[derive(Clone, PartialEq, Routable)]
 enum Route {
     #[at("/")]
