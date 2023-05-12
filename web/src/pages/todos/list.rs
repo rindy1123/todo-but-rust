@@ -14,15 +14,26 @@ use crate::{
 #[derive(Properties, PartialEq)]
 struct DeleteButtonProps {
     id: String,
+    ondelete: Callback<()>,
+}
+
+#[derive(Properties, PartialEq)]
+struct ToDoItemProps {
+    todo: ToDo,
+    ondelete: Callback<()>,
 }
 
 #[function_component(DeleteButton)]
 fn delete_button(props: &DeleteButtonProps) -> Html {
-    let id = props.id.clone();
+    let DeleteButtonProps { id, ondelete } = props;
+    let cloned_id = id.clone();
+    let cloned_ondelete = ondelete.clone();
     let onclick = Callback::from(move |_| {
-        let id = id.clone();
+        let id = cloned_id.clone();
+        let ondelete = cloned_ondelete.clone();
         wasm_bindgen_futures::spawn_local(async move {
             ApiClient::delete(id).await;
+            ondelete.emit(());
         });
     });
     html! {
@@ -31,7 +42,8 @@ fn delete_button(props: &DeleteButtonProps) -> Html {
 }
 
 #[function_component(ToDoItem)]
-fn todo_item(todo: &ToDo) -> Html {
+fn todo_item(props: &ToDoItemProps) -> Html {
+    let ToDoItemProps { todo, ondelete } = props;
     let cloned_todo = todo.clone();
     let navigator = use_navigator().unwrap();
     let onclick_checkbox = Callback::from(move |e: MouseEvent| {
@@ -55,17 +67,22 @@ fn todo_item(todo: &ToDo) -> Html {
         navigator.push(&Route::ToDoShow { id })
     });
 
+    let ToDo {
+        id,
+        done,
+        description,
+    } = todo;
     html! {
         <div>
             <input
                 type="checkbox"
-                id={todo.id.clone()}
-                name={todo.id.clone()}
-                checked={todo.done}
+                id={id.clone()}
+                name={id.clone()}
+                checked={*done}
                 onclick={onclick_checkbox}
             />
-            <label for={todo.id.clone()} onclick={onclick_label}>{todo.description.clone()}</label>
-            <DeleteButton id={todo.id.clone()} />
+            <label for={id.clone()} onclick={onclick_label}>{description}</label>
+            <DeleteButton id={id.clone()} {ondelete} />
         </div>
     }
 }
@@ -83,12 +100,21 @@ fn list() -> Html {
         },
         (),
     );
+
+    let cloned_todo_list_response = todo_list_response.clone();
+    let ondelete = Callback::from(move |_| {
+        let cloned_todo_list_response = cloned_todo_list_response.clone();
+        wasm_bindgen_futures::spawn_local(async move {
+            let todos = ApiClient::list().await;
+            cloned_todo_list_response.set(todos);
+        });
+    });
     let todos = todo_list_response.deref().todos.clone().into_iter();
 
     html! {
         {
             todos.map(|todo| {
-                html!{ <ToDoItem id={todo.id} description={todo.description} done={todo.done} /> }
+                html!{ <ToDoItem {todo} ondelete={ondelete.clone()} /> }
             }).collect::<Html>()
         }
     }
