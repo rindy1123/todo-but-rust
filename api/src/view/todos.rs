@@ -39,3 +39,44 @@ impl MultipleToDos {
         Json(MultipleToDos { todos: res })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod single_todo {
+        use super::*;
+
+        #[test]
+        fn test_generate_response() {
+            let todo = ToDo {
+                id: "id".to_string(),
+                done: false,
+                description: "description".to_string(),
+            };
+            let json = SingleToDo::generate_response(todo);
+            assert_eq!(json.id, "id".to_string());
+            assert!(!json.done);
+            assert_eq!(json.description, "description".to_string());
+        }
+    }
+
+    mod multiple_todos {
+        use super::*;
+
+        #[test]
+        fn test_generate_response() {
+            let todo1 = ToDo {
+                id: "id1".to_string(),
+                done: false,
+                description: "description1".to_string(),
+            };
+            let todos = vec![todo1];
+            let json = MultipleToDos::generate_response(todos);
+            let todo = json.todos.get(0).unwrap();
+            assert_eq!(todo.id, "id1".to_string());
+            assert!(!todo.done);
+            assert_eq!(todo.description, "description1".to_string());
+        }
+    }
+}

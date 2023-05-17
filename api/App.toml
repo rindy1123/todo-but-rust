@@ -3,15 +3,15 @@ namespace = "todo"
 database = "todo"
 username = "root"
 password = "root"
-host = "host.docker.internal"
-port = "48000"
+host = "surrealdb"
+port = "8000"
 
 [test_database]
 namespace = "todo"
 username = "root"
 password = "root"
-host = "host.docker.internal"
-port = "48001"
+host = "test_surrealdb"
+port = "8000"
 
 [cors]
 origin = "http://localhost:28080"
