@@ -18,7 +18,6 @@ use controller::todos;
 fn cors_handler() -> Status {
     Status::NoContent
 }
-// TODO: test
 #[launch]
 fn rocket() -> _ {
     let todo_api = routes![

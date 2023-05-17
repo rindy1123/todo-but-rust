@@ -1,7 +1,5 @@
 use serde::{Deserialize, Serialize};
-use surrealdb::sql::Thing;
-
-use super::DB;
+use surrealdb::{engine::remote::ws::Client, sql::Thing, Surreal};
 
 const TABLE_NAME: &'static str = "todo";
 
@@ -18,6 +16,8 @@ pub struct ToDo {
     pub done: bool,
     pub description: String,
 }
+
+type DB = Surreal<Client>;
 
 impl ToDo {
     pub async fn create(db: &DB, description: String) -> Result<ToDo, surrealdb::Error> {
@@ -77,5 +77,117 @@ impl ToDo {
             done: todo.done,
             description: todo.description,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rocket::{
+        figment::{
+            providers::{Format, Toml},
+            Figment,
+        },
+        futures::future::join_all,
+    };
+    use surrealdb::{engine::remote::ws::Ws, opt::auth::Root, Surreal};
+    use uuid::Uuid;
+
+    use super::*;
+
+    #[derive(Deserialize)]
+    struct DbConfig {
+        namespace: String,
+        username: String,
+        password: String,
+        host: String,
+        port: String,
+    }
+
+    async fn setup_db() -> DB {
+        let figment = Figment::new().merge(Toml::file("App.toml").nested());
+        let db_conf: DbConfig = figment.select("test_database").extract().unwrap();
+        let db = Surreal::new::<Ws>(format!("{}:{}", db_conf.host, db_conf.port))
+            .await
+            .unwrap();
+        db.signin(Root {
+            username: &db_conf.username,
+            password: &db_conf.password,
+        })
+        .await
+        .unwrap();
+        let database = Uuid::new_v4().to_string();
+        db.use_ns(db_conf.namespace).use_db(database).await.unwrap();
+        db
+    }
+
+    async fn mock_todo(db: &DB, description: String) -> ToDo {
+        ToDo::create(&db, description).await.unwrap()
+    }
+
+    async fn mock_many_todos(db: &DB, number: usize) {
+        let mut futures = Vec::new();
+        for _ in 0..number {
+            futures.push(ToDo::create(&db, "test".to_string()));
+        }
+        join_all(futures).await;
+    }
+
+    #[tokio::test]
+    async fn test_create() {
+        let db = setup_db().await;
+        let todo = ToDo::create(&db, "test".to_string()).await.unwrap();
+        assert!(!todo.done);
+        assert_eq!(todo.description, "test".to_string());
+    }
+
+    #[tokio::test]
+    async fn test_get() {
+        let db = setup_db().await;
+        let ToDo {
+            id,
+            done: _,
+            description: _,
+        } = mock_todo(&db, "test".to_string()).await;
+        let todo = ToDo::get(&db, id).await.unwrap();
+        assert!(todo.is_some());
+        assert_eq!(todo.unwrap().description, "test".to_string());
+    }
+
+    #[tokio::test]
+    async fn test_list() {
+        let db = setup_db().await;
+        mock_many_todos(&db, 3).await;
+        let todos = ToDo::list(&db).await.unwrap();
+        assert_eq!(todos.len(), 3);
+    }
+
+    #[tokio::test]
+    async fn test_update() {
+        let db = setup_db().await;
+        let ToDo {
+            id,
+            done: _,
+            description: _,
+        } = mock_todo(&db, "test".to_string()).await;
+
+        let todo = ToDo::update(&db, id, true, "Done".to_string())
+            .await
+            .unwrap();
+        assert!(todo.done);
+        assert_eq!(todo.description, "Done".to_string());
+    }
+
+    #[tokio::test]
+    async fn test_delete() {
+        let db = setup_db().await;
+        let ToDo {
+            id,
+            done: _,
+            description: _,
+        } = mock_todo(&db, "test".to_string()).await;
+
+        ToDo::delete(&db, id.clone()).await.unwrap();
+        let todo = ToDo::get(&db, id).await.unwrap();
+        assert!(todo.is_none());
     }
 }

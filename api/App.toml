@@ -6,5 +6,12 @@ password = "root"
 host = "host.docker.internal"
 port = "48000"
 
+[test_database]
+namespace = "todo"
+username = "root"
+password = "root"
+host = "host.docker.internal"
+port = "48001"
+
 [cors]
 origin = "http://localhost:28080"

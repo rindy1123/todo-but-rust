@@ -1,8 +1,9 @@
-use rocket::{http::Status, serde::json::Json};
+use rocket::{http::Status, serde::json::Json, State};
 use serde::Deserialize;
+use surrealdb::{engine::remote::ws::Client, Surreal};
 
 use crate::{
-    model::{todo::ToDo, DB},
+    model::todo::ToDo,
     view::todos::{MultipleToDos, SingleToDo},
 };
 
@@ -17,9 +18,11 @@ pub struct PutToDo {
     description: String,
 }
 
+type DB = State<Surreal<Client>>;
+
 #[post("/todos", data = "<todo>")]
 pub async fn create(todo: Json<PostToDo>, db: &DB) -> Result<Json<SingleToDo>, Status> {
-    match ToDo::create(db, todo.description.clone()).await {
+    match ToDo::create(db.inner(), todo.description.clone()).await {
         Ok(todo) => {
             let response = SingleToDo::generate_response(todo);
             Ok(response)

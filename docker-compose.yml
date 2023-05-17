@@ -9,6 +9,7 @@ services:
       - 58000:8000
     depends_on:
       - surrealdb
+      - test_surrealdb
   surrealdb:
     image: surrealdb/surrealdb:latest
     ports:
@@ -16,6 +17,11 @@ services:
     volumes:
       - surrealdb:/db
     command: start --log debug --user root --pass root file:/db/todo.db
+  test_surrealdb:
+    image: surrealdb/surrealdb:latest
+    ports:
+      - 48001:8000
+    command: start --log debug --user root --pass root memory
   web:
     build: ./web
     volumes:
