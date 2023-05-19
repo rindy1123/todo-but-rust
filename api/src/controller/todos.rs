@@ -1,5 +1,5 @@
 use rocket::{http::Status, serde::json::Json, State};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use surrealdb::{engine::remote::ws::Client, Surreal};
 
 use crate::{
@@ -7,7 +7,7 @@ use crate::{
     view::todos::{MultipleToDos, SingleToDo},
 };
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct PostToDo {
     description: String,
 }
@@ -96,4 +96,39 @@ pub async fn delete(id: String, db: &DB) -> Status {
             Status::InternalServerError
         }
     }
+}
+
+#[cfg(test)]
+mod test {
+    use rocket::{
+        figment::providers::{Format, Toml},
+        local::blocking::Client,
+        Build, Config, Rocket,
+    };
+
+    use crate::fairing::db::TestDbMiddleware;
+
+    use super::*;
+
+    fn rocket() -> Rocket<Build> {
+        let todo_api = routes![index, show, create, update, delete];
+        let figment = Config::figment().merge(Toml::file("App.toml").nested());
+        rocket::custom(figment)
+            .mount("/", todo_api)
+            .attach(TestDbMiddleware)
+    }
+
+    #[test]
+    fn test_create() {
+        let client = Client::tracked(rocket()).unwrap();
+        let body = PostToDo {
+            description: "test".to_string(),
+        };
+        let response = client.post("/todos").json(&body).dispatch();
+        assert_eq!(response.status(), Status::Ok);
+        let json: SingleToDo = response.into_json().unwrap();
+        assert!(!json.id.is_empty())
+    }
+
+    // TODO: create factory
 }

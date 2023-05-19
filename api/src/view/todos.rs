@@ -1,13 +1,13 @@
 use rocket::serde::json::Json;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::model::todo::ToDo;
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct SingleToDo {
-    id: String,
-    done: bool,
-    description: String,
+    pub id: String,
+    pub done: bool,
+    pub description: String,
 }
 
 #[derive(Serialize)]
