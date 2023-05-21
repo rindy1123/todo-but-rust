@@ -12,7 +12,7 @@ pub struct PostToDo {
     description: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct PutToDo {
     done: bool,
     description: String,
@@ -170,5 +170,32 @@ mod test {
         assert_eq!(response.status(), Status::Ok);
         let MultipleToDos { todos } = response.into_json().unwrap();
         assert_eq!(todos.len(), 2);
+    }
+
+    #[test]
+    fn test_update() {
+        let client = create_client();
+        let body = PostToDo {
+            description: "test".to_string(),
+        };
+        let uri = uri!(create);
+        let response = client.post(uri).json(&body).dispatch();
+
+        let SingleToDo {
+            id,
+            done: _,
+            description: _,
+        } = response.into_json().unwrap();
+        let uri = uri!(update(id));
+        let body = PutToDo {
+            done: true,
+            description: "test2".to_string(),
+        };
+        let response = client.put(uri).json(&body).dispatch();
+
+        assert_eq!(response.status(), Status::Ok);
+        let json: SingleToDo = response.into_json().unwrap();
+        assert_eq!(json.description, "test2".to_string());
+        assert!(json.done);
     }
 }
