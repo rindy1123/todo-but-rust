@@ -10,9 +10,9 @@ pub struct SingleToDo {
     pub description: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct MultipleToDos {
-    todos: Vec<SingleToDo>,
+    pub todos: Vec<SingleToDo>,
 }
 
 impl SingleToDo {

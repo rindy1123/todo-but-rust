@@ -133,7 +133,7 @@ mod test {
     }
 
     #[test]
-    fn test_get() {
+    fn test_show() {
         let client = create_client();
         let body = PostToDo {
             description: "test".to_string(),
@@ -150,5 +150,25 @@ mod test {
         assert_eq!(response.status(), Status::Ok);
         let json: SingleToDo = response.into_json().unwrap();
         assert_eq!(json.description, "test".to_string());
+    }
+
+    #[test]
+    fn test_index() {
+        let client = create_client();
+        let uri = uri!(create);
+        let body1 = PostToDo {
+            description: "test1".to_string(),
+        };
+        client.post(uri.clone()).json(&body1).dispatch();
+        let body2 = PostToDo {
+            description: "test2".to_string(),
+        };
+        client.post(uri).json(&body2).dispatch();
+
+        let uri = uri!(index);
+        let response = client.get(uri).dispatch();
+        assert_eq!(response.status(), Status::Ok);
+        let MultipleToDos { todos } = response.into_json().unwrap();
+        assert_eq!(todos.len(), 2);
     }
 }
