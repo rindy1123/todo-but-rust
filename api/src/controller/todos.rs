@@ -103,32 +103,52 @@ mod test {
     use rocket::{
         figment::providers::{Format, Toml},
         local::blocking::Client,
-        Build, Config, Rocket,
+        Config,
     };
 
     use crate::fairing::db::TestDbMiddleware;
 
     use super::*;
 
-    fn rocket() -> Rocket<Build> {
+    fn create_client() -> Client {
         let todo_api = routes![index, show, create, update, delete];
         let figment = Config::figment().merge(Toml::file("App.toml").nested());
-        rocket::custom(figment)
+        let rocket = rocket::custom(figment)
             .mount("/", todo_api)
-            .attach(TestDbMiddleware)
+            .attach(TestDbMiddleware);
+        Client::tracked(rocket).unwrap()
     }
 
     #[test]
     fn test_create() {
-        let client = Client::tracked(rocket()).unwrap();
+        let client = create_client();
         let body = PostToDo {
             description: "test".to_string(),
         };
-        let response = client.post("/todos").json(&body).dispatch();
+        let uri = uri!(create);
+        let response = client.post(uri).json(&body).dispatch();
         assert_eq!(response.status(), Status::Ok);
         let json: SingleToDo = response.into_json().unwrap();
         assert!(!json.id.is_empty())
     }
 
-    // TODO: create factory
+    #[test]
+    fn test_get() {
+        let client = create_client();
+        let body = PostToDo {
+            description: "test".to_string(),
+        };
+        let uri = uri!(create);
+        let response = client.post(uri).json(&body).dispatch();
+        let SingleToDo {
+            id,
+            done: _,
+            description: _,
+        } = response.into_json().unwrap();
+        let uri = uri!(show(id));
+        let response = client.get(uri).dispatch();
+        assert_eq!(response.status(), Status::Ok);
+        let json: SingleToDo = response.into_json().unwrap();
+        assert_eq!(json.description, "test".to_string());
+    }
 }
