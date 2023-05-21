@@ -198,4 +198,24 @@ mod test {
         assert_eq!(json.description, "test2".to_string());
         assert!(json.done);
     }
+
+    #[test]
+    fn test_delete() {
+        let client = create_client();
+        let body = PostToDo {
+            description: "test".to_string(),
+        };
+        let uri = uri!(create);
+        let response = client.post(uri).json(&body).dispatch();
+
+        let SingleToDo {
+            id,
+            done: _,
+            description: _,
+        } = response.into_json().unwrap();
+        let uri = uri!(delete(id));
+        let response = client.delete(uri).dispatch();
+
+        assert_eq!(response.status(), Status::NoContent);
+    }
 }
